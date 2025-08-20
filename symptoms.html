@@ -56,89 +56,34 @@
     </form>
 
     <script>
-        const symptomInput = document.getElementById("symptom-input");
-        const suggestionsBox = document.getElementById("suggestions");
-        const selectedSymptomsBox = document.getElementById("selected-symptoms");
-
-        let allSymptoms = [];   // chỉ lưu danh sách tên triệu chứng để gợi ý
-        let rawData = [];       // giữ nguyên object từ JSON để lấy mức độ
-        let selectedSymptoms = []; // [{trieu_chung: "...", muc_do: "..."}]
-        const reponse = "data/benh_ly.json";
+        // Đọc JSON
         async function loadData() {
         const response = await fetch("data/benh_ly.json");
         const data = await response.json();
         return data;
         }
-        // 1) Load JSON
-        (async () => {
-            try {
-                const res = await fetch( reponse, { cache: "no-cache" });
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                rawData = await res.json();
-                allSymptoms = rawData.map(item => item["triệu_chứng"]);
-                console.log("Dữ liệu load từ JSON:", rawData);
-            } catch (err) {
-                console.error("Lỗi khi load JSON:", err);
-                alert("Không tải được dữ liệu triệu chứng. Kiểm tra lại đường dẫn hoặc Live Server.");
-            }
-        })();
 
-        // 2) Gợi ý theo từ khóa
-        symptomInput.addEventListener("input", () => {
-            const inputVal = symptomInput.value.toLowerCase().trim();
-            suggestionsBox.innerHTML = "";
-            if (!inputVal) return;
-
-            const filtered = allSymptoms.filter(s =>
-                s.toLowerCase().includes(inputVal) &&
-                !selectedSymptoms.some(sel => sel.trieu_chung === s)
-            );
-
-            filtered.forEach(symptom => {
-                const div = document.createElement("div");
-                div.className = "autocomplete-suggestion";
-                div.textContent = symptom;
-                div.addEventListener("click", () => {
-                    addSymptom(symptom);
-                    symptomInput.value = "";
-                    suggestionsBox.innerHTML = "";
-                });
-                suggestionsBox.appendChild(div);
-            });
-        });
-
-        // 3) Thêm triệu chứng đã chọn
-        function addSymptom(symptom) {
-            // Nếu symptom là object => chỉ lấy tên
-            const symptomName = typeof symptom === "object" ? symptom["triệu_chứng"] : symptom;
-
-            if (selectedSymptoms.includes(symptomName)) return;
-            selectedSymptoms.push(symptomName);
-
-            const span = document.createElement("span");
-            span.className = "selected-symptom";
-            span.textContent = symptomName;
-            selectedSymptomsBox.appendChild(span);
+        // Lấy danh sách triệu chứng
+        async function getSymptoms() {
+        const data = await loadData();
+        return data.map(item => item["triệu_chứng"]);
         }
 
+        // Gợi ý theo triệu chứng đã chọn
+        async function recommend(selected) {
+        const data = await loadData();
+        return data.filter(item => selected.includes(item["triệu_chứng"]));
+        }
 
-        // 4) Submit -> recommendation.html
-        document.getElementById("symptom-form").addEventListener("submit", (e) => {
-            e.preventDefault();
-            if (selectedSymptoms.length === 0) {
-                alert("Vui lòng chọn ít nhất 1 triệu chứng.");
-                return;
-            }
-            localStorage.setItem("selectedSymptoms", JSON.stringify(selectedSymptoms));
-            window.location.href = "recommendation.html";
+        // Ví dụ chạy thử
+        getSymptoms().then(symptoms => {
+        console.log("Danh sách triệu chứng:", symptoms);
         });
 
-        // Ẩn gợi ý khi click ra ngoài
-        document.addEventListener("click", (e) => {
-            if (!e.target.closest(".position-relative")) {
-                suggestionsBox.innerHTML = "";
-            }
+        recommend(["Sốt", "Ho"]).then(results => {
+        console.log("Kết quả gợi ý:", results);
         });
+
     </script>
 
 </body>
