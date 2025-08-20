@@ -63,15 +63,16 @@
         let allSymptoms = [];   // chỉ lưu danh sách tên triệu chứng để gợi ý
         let rawData = [];       // giữ nguyên object từ JSON để lấy mức độ
         let selectedSymptoms = []; // [{trieu_chung: "...", muc_do: "..."}]
-
-        // ĐƯỜNG DẪN ĐÚNG (chọn 1 trong 2, ưu tiên cái đầu):
-        const JSON_URL = "../backend/data/benh_ly.json";     // relative từ /frontend/
-        // const JSON_URL = "/backend/data/benh_ly.json";     // tuyệt đối từ root server
-
+        const reponse = "data/benh_ly.json";
+        async function loadData() {
+        const response = await fetch("data/benh_ly.json");
+        const data = await response.json();
+        return data;
+        }
         // 1) Load JSON
         (async () => {
             try {
-                const res = await fetch(JSON_URL, { cache: "no-cache" });
+                const res = await fetch( reponse, { cache: "no-cache" });
                 if (!res.ok) throw new Error("HTTP " + res.status);
                 rawData = await res.json();
                 allSymptoms = rawData.map(item => item["triệu_chứng"]);
