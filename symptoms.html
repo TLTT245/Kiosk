@@ -2,90 +2,131 @@
 <html lang="vi">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chọn Triệu Chứng</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        .autocomplete-suggestions {
-            border: 1px solid #ccc;
-            max-height: 220px;
-            overflow-y: auto;
-            position: absolute;
-            background: #fff;
-            z-index: 10;
-            width: 100%;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chọn Triệu Chứng</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    .autocomplete-suggestions {
+      border: 1px solid #ccc;
+      max-height: 220px;
+      overflow-y: auto;
+      position: absolute;
+      background: #fff;
+      z-index: 10;
+      width: 100%;
+    }
 
-        .autocomplete-suggestion {
-            padding: 8px;
-            cursor: pointer;
-        }
+    .autocomplete-suggestion {
+      padding: 8px;
+      cursor: pointer;
+    }
 
-        .autocomplete-suggestion:hover {
-            background: #f0f0f0;
-        }
+    .autocomplete-suggestion:hover {
+      background: #f0f0f0;
+    }
 
-        .selected-symptom {
-            display: inline-block;
-            margin: 5px;
-            padding: 5px 10px;
-            background: #d1ecf1;
-            border-radius: 20px;
-        }
-    </style>
+    .selected-symptom {
+      display: inline-block;
+      margin: 5px;
+      padding: 5px 10px;
+      background: #d1ecf1;
+      border-radius: 20px;
+    }
+  </style>
 </head>
 
 <body class="p-4">
-    <h2 class="mb-4 text-center">Chọn triệu chứng bạn đang gặp phải</h2>
+  <h2 class="mb-4 text-center">Chọn triệu chứng bạn đang gặp phải</h2>
 
-    <form id="symptom-form">
-        <div class="mb-3 position-relative">
-            <label class="form-label">Nhập triệu chứng:</label>
-            <input type="text" class="form-control" id="symptom-input" autocomplete="off"
-                placeholder="Ví dụ: Tôi cảm thấy sốt, Tôi bị ho khan...">
-            <div id="suggestions" class="autocomplete-suggestions"></div>
-        </div>
+  <form id="symptom-form">
+    <div class="mb-3 position-relative">
+      <label class="form-label">Nhập triệu chứng:</label>
+      <input type="text" class="form-control" id="symptom-input" autocomplete="off"
+        placeholder="Ví dụ: Sốt, Ho, Đau đầu...">
+      <div id="suggestions" class="autocomplete-suggestions"></div>
+    </div>
 
-        <div class="mb-3">
-            <label>Triệu chứng đã chọn:</label>
-            <div id="selected-symptoms"></div>
-        </div>
+    <div class="mb-3">
+      <label>Triệu chứng đã chọn:</label>
+      <div id="selected-symptoms"></div>
+    </div>
 
-        <button type="submit" class="btn btn-success">Tiếp tục</button>
-    </form>
+    <button type="submit" class="btn btn-success">Tiếp tục</button>
+  </form>
 
-    <script>
-        // Đọc JSON
-        async function loadData() {
-        const response = await fetch("data/benh_ly.json");
-        const data = await response.json();
-        return data;
-        }
+  <div class="mt-4">
+    <h4>Kết quả gợi ý:</h4>
+    <div id="results" class="p-3 border rounded"></div>
+  </div>
 
-        // Lấy danh sách triệu chứng
-        async function getSymptoms() {
-        const data = await loadData();
-        return data.map(item => item["triệu_chứng"]);
-        }
+  <script>
+    // ====== Đọc JSON ======
+    async function loadData() {
+      const response = await fetch("data/benh_ly.json");
+      return await response.json();
+    }
 
-        // Gợi ý theo triệu chứng đã chọn
-        async function recommend(selected) {
-        const data = await loadData();
-        return data.filter(item => selected.includes(item["triệu_chứng"]));
-        }
+    // ====== Lấy danh sách triệu chứng ======
+    async function getSymptoms() {
+      const data = await loadData();
+      return data.map(item => item["triệu_chứng"]);
+    }
 
-        // Ví dụ chạy thử
-        getSymptoms().then(symptoms => {
-        console.log("Danh sách triệu chứng:", symptoms);
+    // ====== Gợi ý theo triệu chứng ======
+    async function recommend(selected) {
+      const data = await loadData();
+      return data.filter(item => selected.includes(item["triệu_chứng"]));
+    }
+
+    // ====== Xử lý autocomplete ======
+    const input = document.getElementById("symptom-input");
+    const suggestionsBox = document.getElementById("suggestions");
+    const selectedBox = document.getElementById("selected-symptoms");
+    const resultsBox = document.getElementById("results");
+    let selectedSymptoms = [];
+
+    input.addEventListener("input", async function () {
+      const query = this.value.toLowerCase();
+      const symptoms = await getSymptoms();
+      const filtered = symptoms.filter(s => s.toLowerCase().includes(query));
+
+      suggestionsBox.innerHTML = "";
+      filtered.forEach(symptom => {
+        const div = document.createElement("div");
+        div.textContent = symptom;
+        div.classList.add("autocomplete-suggestion");
+        div.addEventListener("click", function () {
+          if (!selectedSymptoms.includes(symptom)) {
+            selectedSymptoms.push(symptom);
+            renderSelected();
+          }
+          input.value = "";
+          suggestionsBox.innerHTML = "";
         });
+        suggestionsBox.appendChild(div);
+      });
+    });
 
-        recommend(["Sốt", "Ho"]).then(results => {
-        console.log("Kết quả gợi ý:", results);
-        });
+    // ====== Hiển thị triệu chứng đã chọn ======
+    function renderSelected() {
+      selectedBox.innerHTML = "";
+      selectedSymptoms.forEach(symptom => {
+        const span = document.createElement("span");
+        span.textContent = symptom;
+        span.classList.add("selected-symptom");
+        selectedBox.appendChild(span);
+      });
+    }
 
-    </script>
-
+    // ====== Submit form và hiển thị kết quả ======
+    document.getElementById("symptom-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const results = await recommend(selectedSymptoms);
+      resultsBox.innerHTML = results.length
+        ? results.map(r => `<div><b>${r["triệu_chứng"]}</b>: ${r["bệnh_đề_xuất"] || "Chưa có dữ liệu"}</div>`).join("")
+        : "<em>Không tìm thấy bệnh lý phù hợp.</em>";
+    });
+  </script>
 </body>
-
 </html>
